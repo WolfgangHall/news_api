@@ -1,0 +1,73 @@
+import requests
+from newsapi.articles import Articles
+from send_news_email import SendEmail
+from datetime import date
+
+import sys
+sys.path.insert(0, r'D:\app')  # grants access to Account Details
+from news_account_info import AccountDetails
+
+# creates Articles object
+a = Articles(API_KEY=AccountDetails.api_key)
+
+news_sources = ['bloomberg',
+                'the-economist',
+                'the-washington-post',
+                'the-new-york-times',
+                'hacker-news'
+                ]
+
+
+def get_news_sources(news_lyst, outfile='news.txt'):
+    '''Creates a text file containing news article links'''
+    with open(outfile, 'w') as news_file:
+        # iterates through news_sources list
+        for source_name in news_sources:
+            get_source = a.get(source=source_name)
+            provider = style_title(get_source['source'])
+            article_list = get_source['articles']
+
+            # adds html header source title
+            print("<h3> {} </h3>".format(provider) + '\n', file=news_file)
+
+            # iterates through articles for title and url
+            for value in article_list:
+                print('<p>- {}, <a href="{}">link</a> </p> '.format(value['title'], value['url']), file=news_file)
+                print('<img src={} width="28%">'.format(value['urlToImage']), file=news_file)
+
+            # adds spacing between each source
+            print('<br />', file=news_file)
+            print("<p> {} </p>".format('-' * 30), file=news_file)
+            print('<br />', file=news_file)
+
+
+def email_news_sources(infile='news.txt'):
+    '''Emails the contents of a created news file'''
+    with open(infile, 'r') as text_file:
+        content = text_file.read()
+        new_email = SendEmail(stringify_date(), content)
+
+
+def style_title(title):
+    '''Styles the title of the news source'''
+    if '-' not in title:
+        title = title.capitalize()  # bloomberg -> Bloomberg
+    else:
+        title = title.replace('-', ' ').title()  # the-economist -> The Economist
+
+    return title
+
+
+def stringify_date():
+    '''Formats today's date to string'''
+    current_date = date.today()
+    date_today = current_date.strftime("%B %d, %Y")
+    return date_today
+
+
+if __name__ == '__main__':
+    def main():
+        get_news_sources(news_sources)
+        email_news_sources()
+
+    main()
